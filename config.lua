@@ -1,0 +1,14 @@
+-- Time (in seconds)
+RACE_DURATION = 600 -- 10 min
+RACE_DELAY = 300 -- 5 min
+RACE_ANNOUNCE_INTERVAL = 1800 -- 30 min
+
+MIN_PARTICIPANTS = 5
+TOP_PLAYER_COUNT = 3
+
+PRIZE_COMMISSION = 5 -- percents
+PRIZE_COEFFS = {
+  75,
+  15,
+  10
+}
