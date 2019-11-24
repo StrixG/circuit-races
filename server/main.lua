@@ -1,11 +1,5 @@
 local announcementTimer
 
-local activeCheckpoints
-local currentCheckpoint
-
-local currentMarker
-local nextMarker
-
 function startTestRace()
   activeCheckpoints = Tracks.getCheckpoints("parking")
   currentCheckpoint = 2
@@ -32,36 +26,4 @@ addEventHandler("onResourceStart", resourceRoot, function ()
       Race.prepare()
     end,
   RACE_ANNOUNCE_INTERVAL * 1000, 0)
-
-  -- startTestRace()
-end)
-
-addEventHandler("onPlayerMarkerHit", root, function (markerHit)
-  if markerHit == currentMarker then
-    currentCheckpoint = currentCheckpoint % #activeCheckpoints + 1
-
-    currentMarker:destroy()
-    currentMarker = nextMarker
-    currentMarker:setColor(255, 255, 120, 255)
-
-    local nextCheckpoint = currentCheckpoint % #activeCheckpoints + 1
-    local nextPos = activeCheckpoints[nextCheckpoint]
-    nextMarker = Marker(nextPos[1], nextPos[2], nextPos[3])
-    nextMarker:setColor(255, 255, 255, 255)
-
-    if currentCheckpoint == 1 then
-      currentMarker:setIcon("finish")
-    else
-      currentMarker:setIcon("arrow")
-      currentMarker:setTarget(nextPos[1], nextPos[2], nextPos[3])
-    end
-
-    if nextCheckpoint == 1 then
-      nextMarker:setIcon("finish")
-    else
-      local nextNextCheckpoint = (currentCheckpoint + 1) % #activeCheckpoints + 1
-      local nextNextPos = activeCheckpoints[nextNextCheckpoint]
-      nextMarker:setTarget(nextNextPos[1], nextNextPos[2], nextNextPos[3])
-    end
-  end
 end)
