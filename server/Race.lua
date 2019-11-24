@@ -10,7 +10,7 @@ Race.checkpoints = {}
 Race.currentCheckpoint = {}
 Race.currentMarker = {}
 Race.nextMarker = {}
-Race.startLapTime = {}
+Race.lapStartTime = {}
 Race.bestLapTime = {}
 
 function Race.prepare()
@@ -32,7 +32,7 @@ function Race.prepare()
   Race.updateWaitingTimer = Timer(function ()
     local waitingTime = Race.waitingTimer:getDetails()
     triggerClientEvent(Race.participants, "Race.updateWaitingTime", resourceRoot, waitingTime)
-  end, 3000, 0)
+  end, TIME_SYNC_INTERVAL * 3, 0)
 
   local raceDelayMin = RACE_DELAY / 60
   outputChatBox(("Скоро начнётся гонка %s!"):format(Race.trackName, root), root, unpack(CHAT_MESSAGES_COLOR))
@@ -61,6 +61,9 @@ function Race.stop()
   if isTimer(Race.endTimer) then
     Race.endTimer:destroy()
   end
+  if isTimer(Race.updateLapTimer) then
+    Race.updateLapTimer:destroy()
+  end
   if isElement(Race.startMarker) then
     Race.startMarker:destroy()
   end
@@ -70,6 +73,7 @@ function Race.stop()
 
   Race.waitingTimer = nil
   Race.updateWaitingTimer = nil
+  Race.updateLapTimer = nil
   Race.endTimer = nil
   Race.startMarker = nil
   Race.startBlip = nil
@@ -78,7 +82,7 @@ function Race.stop()
   Race.trackName = nil
   Race.checkpoints = {}
   Race.participants = {}
-
+  
   for player, marker in pairs(Race.currentMarker) do
     if isElement(marker) then
       marker:destroy()
@@ -92,8 +96,11 @@ function Race.stop()
   Race.currentCheckpoint = {}
   Race.currentMarker = {}
   Race.nextMarker = {}
-  Race.startLapTime = {}
+  Race.lapStartTime = {}
   Race.bestLapTime = {}
+
+  Race.bestPlayer = nil
+  Race.bestPlayerTime = nil
 end
 
 function Race.start()
@@ -138,6 +145,13 @@ function Race.start()
     Race.stop()
   end, RACE_DURATION * 1000, 1)
 
+  Race.updateLapTimer = Timer(function ()
+    for i, participant in pairs(Race.participants) do
+      local lapTime = getTickCount() - Race.lapStartTime[participant]
+      triggerClientEvent(participant, "Race.updateLapTime", resourceRoot, lapTime)
+    end
+  end, TIME_SYNC_INTERVAL * 3, 0)
+
   Race.started = true
 end
 
@@ -153,7 +167,7 @@ function Race.spawnPlayer(player)
 
   Race.showNextCheckpoint(player)
 
-  Race.startLapTime[player] = getTickCount()
+  Race.lapStartTime[player] = getTickCount()
 
   triggerClientEvent(player, "Race.onStart", resourceRoot, Race.trackName)
 end
@@ -182,9 +196,24 @@ function Race.leave(player)
     end
   end
 
+  if isElement(Race.currentMarker[player]) then
+    Race.currentMarker[player]:destroy()
+  end
+  if isElement(Race.nextMarker[player]) then
+    Race.nextMarker[player]:destroy()
+  end
+
+  Race.lapStartTime[player] = nil
+  Race.bestLapTime[player] = nil
+  Race.currentCheckpoint[player] = nil
+  Race.currentMarker[player] = nil
+  Race.nextMarker[player] = nil
+
   if Race.startMarker then
     Race.startMarker:setVisibleTo(player, true)
   end
+
+  triggerClientEvent(player, "Race.onCancel", resourceRoot)
 end
 
 function Race.isJoined(player)
@@ -227,12 +256,17 @@ function Race.onStartMarkerHit(source, matchingDimension)
 end
 
 function Race.onFinishLap(player, elapsedTime)
-  print(elapsedTime / 1000)
   if not Race.bestLapTime[player] then
     Race.bestLapTime[player] = elapsedTime
   elseif elapsedTime < Race.bestLapTime[player] then
     Race.bestLapTime[player] = elapsedTime
   end
+  if not Race.bestPlayer or elapsedTime > Race.bestPlayerTime then
+    Race.bestPlayer = player
+    Race.bestPlayerTime = elapsedTime
+    triggerClientEvent(player, "Race.onLapRecord", resourceRoot, Race.bestPlayer, Race.bestPlayerTime)
+  end
+  triggerClientEvent(player, "Race.onFinishLap", resourceRoot, elapsedTime, Race.bestLapTime[player])
 end
 
 function Race.showNextCheckpoint(player)
@@ -287,8 +321,8 @@ addEventHandler("onPlayerMarkerHit", root, function (markerHit, matchingDimensio
       if Race.isJoined(source) then
         if markerHit == Race.currentMarker[source] then
           if Race.currentCheckpoint[source] == 1 then
-            Race.onFinishLap(source, getTickCount() - Race.startLapTime[source])
-            Race.startLapTime[source] = getTickCount()
+            Race.onFinishLap(source, getTickCount() - Race.lapStartTime[source])
+            Race.lapStartTime[source] = getTickCount()
           end
           Race.showNextCheckpoint(source)
         end

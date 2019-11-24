@@ -28,3 +28,7 @@ function findRotation3D(x1, y1, z1, x2, y2, z2)
 
   return rotX, 0, rotZ
 end
+
+function removeHexFromString(string)
+	return string.gsub(string, "#%x%x%x%x%x%x", "")
+end

@@ -6,6 +6,7 @@ function Assets.load()
   Assets.trackName = DxFont("assets/FiraSansCondensed-Medium.ttf", 24)
   Assets.bold = DxFont("assets/FiraSansCondensed-Bold.ttf", 24)
   Assets.time = DxFont("assets/OpenSans-BoldItalic.ttf", 36)
+  Assets.timeSmall = DxFont("assets/OpenSans-BoldItalic.ttf", 18)
 end
 
 addEventHandler("onClientResourceStart", resourceRoot, Assets.load)

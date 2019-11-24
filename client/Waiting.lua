@@ -13,7 +13,7 @@ function Waiting.draw()
     "center", "top", false, false, false, false, true)
   local time = ("%d:%02d.%03d"):format(Waiting.time / 1000 / 60, Waiting.time / 1000 % 60, Waiting.time % 1000)
   dxDrawText(time,
-    0, 96, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.time,
+    0, 88, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.time,
     "center", "top", false, false, false, false, true)
 
   -- Calculate time
