@@ -1,6 +1,6 @@
 -- Time (in seconds)
-RACE_DURATION = 60 -- 10 min
-RACE_DELAY = 15 -- 5 min
+RACE_DURATION = 30 -- 10 min
+RACE_DELAY = 5 -- 5 min
 RACE_ANNOUNCE_INTERVAL = 75 -- 30 min
 
 -- Minimum number of participants

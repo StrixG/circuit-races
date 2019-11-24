@@ -26,7 +26,7 @@ function Race.prepare()
   Race.waiting = true
   Race.waitingTimer = Timer(Race.start, RACE_DELAY * 1000, 1)
   Race.updateWaitingTimer = Timer(function ()
-    local waitingTime = math.floor(Race.waitingTimer:getDetails() / 1000)
+    local waitingTime = Race.waitingTimer:getDetails()
     triggerClientEvent(Race.participants, "Race.updateWaitingTime", resourceRoot, waitingTime)
   end, 3000, 0)
 
@@ -43,10 +43,10 @@ function Race.stop()
 
   Race.waiting = false
 
-  for i, participant in pairs(Race.participants) do
-    participant.vehicle:setFrozen(false)
-    toggleAllControls(participant, true, true, false)
-  end
+  -- for i, participant in pairs(Race.participants) do
+  --   participant.vehicle:setFrozen(false)
+  --   toggleAllControls(participant, true, true, false)
+  -- end
   
   if isTimer(Race.waitingTimer) then
     Race.waitingTimer:destroy()
@@ -114,9 +114,8 @@ function Race.start()
     local _, _, directionZ = findRotation3D(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3], secondCheckpoint[1], secondCheckpoint[2], secondCheckpoint[3])
     participant.vehicle:setPosition(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3] + 0.5)
     participant.vehicle:setRotation(0, 0, directionZ)
-    participant.vehicle:setFrozen(true)
+    participant.vehicle:setVelocity(0, 0, 0)
     participant:setCameraTarget()
-    toggleAllControls(participant, false, true, false)
 
     triggerClientEvent(participant, "Race.onStart", resourceRoot)
   end
@@ -139,6 +138,21 @@ function Race.join(player)
   end
 
   table.insert(Race.participants, player)
+  Race.startMarker:setVisibleTo(player, true)
+  Race.startMarker:setVisibleTo(player, false)
+
+  if Race.started then
+    local firstCheckpoint = Race.checkpoints[1]
+    local secondCheckpoint = Race.checkpoints[2]
+
+    local _, _, directionZ = findRotation3D(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3], secondCheckpoint[1], secondCheckpoint[2], secondCheckpoint[3])
+    player.vehicle:setPosition(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3] + 0.5)
+    player.vehicle:setRotation(0, 0, directionZ)
+    player.vehicle:setVelocity(0, 0, 0)
+    player:setCameraTarget()
+
+    triggerClientEvent(player, "Race.onStart", resourceRoot)
+  end
 end
 
 function Race.leave(player)
@@ -147,6 +161,10 @@ function Race.leave(player)
       table.remove(Race.participants, i)
       break
     end
+  end
+
+  if Race.startMarker then
+    Race.startMarker:setVisibleTo(player, true)
   end
 end
 
@@ -168,11 +186,13 @@ end
 
 addEventHandler("onPlayerMarkerHit", root, function (markerHit, matchingDimension)
   if matchingDimension then
-    if Race.isJoined(source) then
-      outputChatBox("Вы уже участвуете в гонке. Ожидайте начала.", source, unpack(CHAT_MESSAGES_COLOR))
-      return
-    end
-    if Race.waiting and markerHit == Race.startMarker then
+    if (Race.waiting or Race.started) and markerHit == Race.startMarker then
+      if Race.isJoined(source) then
+        if Race.waiting then
+          outputChatBox("Вы уже участвуете в гонке. Ожидайте начала.", source, unpack(CHAT_MESSAGES_COLOR))
+        end
+        return
+      end
       if not source.vehicle or source.vehicleSeat ~= 0 then
         outputChatBox("Вы должны быть в машине, чтобы принять участие в гонке.", source, unpack(CHAT_MESSAGES_COLOR))
         return
@@ -204,11 +224,13 @@ addEventHandler("Race.onConfirm", resourceRoot, function (confirmed)
       outputChatBox("Недостаточно денег для участия в гонке.", client, unpack(CHAT_MESSAGES_COLOR))
       return
     end
+
     Race.join(client)
     outputChatBox("Вы присоединились к гонке.", client, unpack(CHAT_MESSAGES_COLOR))
+
     if Race.waiting then
       outputChatBox("Ожидайте начала.", client, unpack(CHAT_MESSAGES_COLOR))
-      local waitingTime = math.floor(Race.waitingTimer:getDetails() / 1000)
+      local waitingTime = Race.waitingTimer:getDetails()
       triggerClientEvent(client, "Race.startWaiting", resourceRoot, waitingTime)
     elseif Race.started then
 
