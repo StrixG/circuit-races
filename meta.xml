@@ -7,12 +7,17 @@
   <script src="shared/config.lua" type="shared" cache="false" />
   <script src="shared/utils.lua" type="shared" cache="false" />
 
+  <script src="client/main.lua" type="client" />
   <script src="client/Assets.lua" type="client" />
-  <script src="client/client.lua" type="client" />
+  <script src="client/Waiting.lua" type="client" />
+  <script src="client/Confirmation.lua" type="client" />
+  <script src="client/Race.lua" type="client" />
 
+  <script src="server/main.lua" type="server" />
   <script src="server/Tracks.lua" type="server" />
-  <script src="server/Announcement.lua" type="server" />
+  <script src="server/Race.lua" type="server" />
 
+  <file src="assets/FiraSansCondensed-Regular.ttf" />
   <file src="assets/FiraSansCondensed-Medium.ttf" />
   <file src="assets/FiraSansCondensed-Bold.ttf" />
   <file src="assets/FiraSansCondensed-BoldItalic.ttf" />

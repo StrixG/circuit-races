@@ -1,7 +1,8 @@
 Tracks = {}
-Tracks.list = {}
 
 Tracks.LIST_FILENAME = "track_list.json"
+
+Tracks.list = {}
 
 -- Loads the track list
 function Tracks.loadList()
@@ -61,51 +62,3 @@ function Tracks.getCheckpoints(track)
     return trackCheckpoints
   end
 end
-
-local activeCheckpoints
-local currentCheckpoint
-
-local currentMarker
-local nextMarker
-
-addEventHandler("onResourceStart", resourceRoot, function ()
-  Tracks.loadList()
-  activeCheckpoints = Tracks.getCheckpoints("test")
-  currentCheckpoint = 1
-
-  local cp = activeCheckpoints[currentCheckpoint]
-  currentMarker = Marker(cp[1], cp[2], cp[3])
-  currentMarker:setColor(255, 255, 120, 255)
-
-  local nextCp = activeCheckpoints[currentCheckpoint % #activeCheckpoints + 1]
-  nextMarker = Marker(nextCp[1], nextCp[2], nextCp[3])
-  nextMarker:setColor(255, 255, 255, 255)
-  currentMarker:setTarget(nextCp[1], nextCp[2], nextCp[3])
-
-  local nextNextCp = activeCheckpoints[(currentCheckpoint + 1) % #activeCheckpoints + 1]
-  nextMarker:setTarget(nextNextCp[1], nextNextCp[2], nextNextCp[3])
-end)
-
-addEventHandler("onPlayerMarkerHit", root, function (markerHit)
-  if markerHit == currentMarker then
-    currentCheckpoint = currentCheckpoint % #activeCheckpoints + 1
-
-    currentMarker:destroy()
-    currentMarker = nextMarker
-    currentMarker:setColor(255, 255, 120, 255)
-
-    if currentCheckpoint == #activeCheckpoints then
-      currentMarker:setIcon("finish")
-    else
-      currentMarker:setIcon("arrow")
-    end
-
-    local nextCp = activeCheckpoints[currentCheckpoint % #activeCheckpoints + 1]
-    nextMarker = Marker(nextCp[1], nextCp[2], nextCp[3])
-    nextMarker:setColor(255, 255, 255, 255)
-    currentMarker:setTarget(nextCp[1], nextCp[2], nextCp[3])
-
-    local nextNextCp = activeCheckpoints[(currentCheckpoint + 1) % #activeCheckpoints + 1]
-    nextMarker:setTarget(nextNextCp[1], nextNextCp[2], nextNextCp[3])
-  end
-end)
