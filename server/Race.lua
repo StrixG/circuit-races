@@ -14,13 +14,17 @@ Race.lapStartTime = {}
 Race.bestLapTime = {}
 
 function Race.prepare()
+  if Race.activeTrack then
+    return
+  end
+
   -- Pick random track
-  local track = Tracks.list[math.random(1, #Tracks.list)]
+  Race.activeTrack = Tracks.list[math.random(1, #Tracks.list)]
 
   Race.prizePool = 0
 
-  Race.trackName = Tracks.getName(track)
-  Race.checkpoints = Tracks.getCheckpoints(track)
+  Race.trackName = Tracks.getName(Race.activeTrack)
+  Race.checkpoints = Tracks.getCheckpoints(Race.activeTrack)
 
   Race.startMarker = Marker(Race.checkpoints[1][1], Race.checkpoints[1][2], Race.checkpoints[1][3])
   Race.startBlip = Blip(Race.checkpoints[1][1], Race.checkpoints[1][2], Race.checkpoints[1][3], 53)
@@ -70,6 +74,8 @@ function Race.stop()
   if isElement(Race.startBlip) then
     Race.startBlip:destroy()
   end
+
+  Race.activeTrack = nil
 
   Race.waitingTimer = nil
   Race.updateWaitingTimer = nil
@@ -261,10 +267,10 @@ function Race.onFinishLap(player, elapsedTime)
   elseif elapsedTime < Race.bestLapTime[player] then
     Race.bestLapTime[player] = elapsedTime
   end
-  if not Race.bestPlayer or elapsedTime > Race.bestPlayerTime then
+  if not Race.bestPlayer or elapsedTime < Race.bestPlayerTime then
     Race.bestPlayer = player
     Race.bestPlayerTime = elapsedTime
-    triggerClientEvent(player, "Race.onLapRecord", resourceRoot, Race.bestPlayer, Race.bestPlayerTime)
+    triggerClientEvent(root, "Race.onLapRecord", resourceRoot, Race.bestPlayer, Race.bestPlayerTime)
   end
   triggerClientEvent(player, "Race.onFinishLap", resourceRoot, elapsedTime, Race.bestLapTime[player])
 end
