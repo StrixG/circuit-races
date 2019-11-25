@@ -179,6 +179,10 @@ function Race.spawnPlayer(player)
 end
 
 function Race.join(player)
+  if not Race.activeTrack then
+    return
+  end
+
   for i, participant in pairs(Race.participants) do
     if participant == player then
       return
@@ -230,12 +234,6 @@ function Race.isJoined(player)
   end
 
   return false
-end
-
-function Race.increasePrizePool(amount)
-  if Race.prizePool then
-    Race.prizePool = Race.prizePool + amount
-  end
 end
 
 function Race.onStartMarkerHit(source, matchingDimension)
