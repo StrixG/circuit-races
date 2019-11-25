@@ -148,6 +148,14 @@ function Race.start()
   outputChatBox("Вы ещё можете успеть присоединиться к гонке.", root, unpack(CHAT_MESSAGES_COLOR))
 
   Race.endTimer = Timer(function ()
+    local topPlayers = {}
+    for player, lapTime in pairs(Race.bestLapTime) do
+      table.insert(topPlayers, {player, lapTime})
+    end
+    table.sort(topPlayers, function (player1, player2)
+      return player1[2] > player2[2]
+    end)
+    iprint(topPlayers)
     Race.stop()
   end, RACE_DURATION * 1000, 1)
 

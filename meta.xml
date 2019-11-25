@@ -9,6 +9,7 @@
 
   <script src="client/main.lua" type="client" />
   <script src="client/Assets.lua" type="client" />
+  <script src="client/Top.lua" type="client" />
   <script src="client/Waiting.lua" type="client" />
   <script src="client/Confirmation.lua" type="client" />
   <script src="client/Race.lua" type="client" />
