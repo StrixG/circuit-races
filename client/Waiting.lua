@@ -8,7 +8,7 @@ Waiting.time = 0
 local pastTickCount = 0
 
 function Waiting.draw()
-  dxDrawText("До начала гонки",
+  dxDrawText("Старт гонки через",
     0, 64, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.fonts.text,
     "center", "top", false, false, false, false, true)
   local time = ("%d:%02d.%03d"):format(Waiting.time / 1000 / 60, Waiting.time / 1000 % 60, Waiting.time % 1000)

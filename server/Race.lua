@@ -324,7 +324,7 @@ function Race.isJoined(player)
 end
 
 function Race.onStartMarkerHit(source, matchingDimension)
-  if matchingDimension then
+  if source.type == "player" and matchingDimension then
     if Race.waiting or Race.started then
       if Race.isJoined(source) then
         if Race.waiting then
@@ -407,20 +407,21 @@ function Race.showNextCheckpoint(player)
   Race.nextMarker[player] = nextMarker
 end
 
-addEventHandler("onPlayerMarkerHit", root, function (markerHit, matchingDimension)
-  if matchingDimension then
+addEventHandler("onMarkerHit", root, function (hitElement, matchingDimension)
+  if hitElement.type == "vehicle" and matchingDimension then
     if Race.started then
-      if Race.isJoined(source) then
-        if markerHit == Race.currentMarker[source] then
-          if Race.currentCheckpoint[source] == 1 then
-            Race.onFinishLap(source, getTickCount() - Race.lapStartTime[source])
-            Race.lapStartTime[source] = getTickCount()
+      local player = hitElement.occupant
+      if player and Race.isJoined(player) then
+        if source == Race.currentMarker[player] then
+          if Race.currentCheckpoint[player] == 1 then
+            Race.onFinishLap(player, getTickCount() - Race.lapStartTime[player])
+            Race.lapStartTime[player] = getTickCount()
             
-            playSoundFrontEnd(source, 44)
+            playSoundFrontEnd(player, 44)
           else
-            playSoundFrontEnd(source, 43)
+            playSoundFrontEnd(player, 43)
           end
-          Race.showNextCheckpoint(source)
+          Race.showNextCheckpoint(player)
         end
       end
     end
