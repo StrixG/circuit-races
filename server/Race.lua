@@ -225,7 +225,7 @@ function Race.onEnd()
     local topCount = math.min(TOP_PLAYER_COUNT, #topPlayers)
     for i = 1, topCount do
       local time = ("%d:%02d.%03d"):format(topPlayers[i].time / 1000 / 60, topPlayers[i].time / 1000 % 60, topPlayers[i].time % 1000)
-      outputChatBox(("%d. %s на %s. (%s, $%s)"):format(
+      outputChatBox(("%d. %s на %s (%s, $%s)"):format(
         i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, time, numberFormat(topPlayers[i].prize, ' ')), root, unpack(CHAT_MESSAGES_COLOR))
     end
   else
