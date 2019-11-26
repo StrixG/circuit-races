@@ -200,6 +200,7 @@ function Race.onEnd()
   for player, lapTime in pairs(Race.bestLapTime) do
     table.insert(topPlayers, {player = player, name = player.name, time = lapTime, vehicle = player.vehicle.name})
   end
+
   table.sort(topPlayers, function (player1, player2)
     return player1.time < player2.time
   end)
@@ -472,7 +473,7 @@ end)
 
 -- Remove a player from the race when his vehicle is destroyed
 addEventHandler("onElementDestroy", root, function ()
-  if Race.activeTrack and source.type == "vehice" then
+  if Race.activeTrack and source.type == "vehicle" then
     for player, vehicle in pairs(Race.vehicles) do
       if source == vehicle then
         outputChatBox("Ваша машина уничтожена. Участие в гонке отменено.", player, unpack(CHAT_MESSAGES_COLOR))
