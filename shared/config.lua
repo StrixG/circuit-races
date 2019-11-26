@@ -7,7 +7,7 @@ RACE_LEFT_VEHICLE_TIME = 5
 TIME_SYNC_INTERVAL = 3
 
 -- Minimum number of participants
-MIN_PARTICIPANTS = 1
+MIN_PARTICIPANTS = 5
 -- Top players
 TOP_PLAYER_COUNT = 3
 
