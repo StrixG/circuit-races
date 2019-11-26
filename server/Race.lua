@@ -71,6 +71,9 @@ function Race.stop()
   if isTimer(Race.updateLapTimer) then
     Race.updateLapTimer:destroy()
   end
+  if isTimer(Race.updateLeftTimer) then
+    Race.updateLeftTimer:destroy()
+  end
   if isElement(Race.startMarker) then
     Race.startMarker:destroy()
   end
@@ -83,6 +86,7 @@ function Race.stop()
   Race.waitingTimer = nil
   Race.updateWaitingTimer = nil
   Race.updateLapTimer = nil
+  Race.updateLeftTimer = nil
   Race.endTimer = nil
   Race.startMarker = nil
   Race.startBlip = nil
@@ -157,12 +161,15 @@ function Race.start()
 
   Race.endTimer = Timer(Race.onEnd, RACE_DURATION * 1000, 1)
 
-  -- Sync lap time with clients
+  -- Sync time with clients
   Race.updateLapTimer = Timer(function ()
-    for i, participant in pairs(Race.participants) do
-      local lapTime = getTickCount() - Race.lapStartTime[participant]
-      triggerClientEvent(participant, "Race.updateLapTime", resourceRoot, lapTime)
-    end
+    local lapTime = getTickCount() - Race.lapStartTime[participant]
+    triggerClientEvent(Race.participants, "Race.updateLapTime", resourceRoot, lapTime)
+  end, TIME_SYNC_INTERVAL * 3, 0)
+
+  Race.updateLeftTimer = Timer(function ()
+    local leftTime = Race.endTimer:getDetails()
+    triggerClientEvent(Race.participants, "Race.updateLeftTime", resourceRoot, leftTime)
   end, TIME_SYNC_INTERVAL * 3, 0)
 
   -- Set players in position
