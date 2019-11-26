@@ -46,8 +46,10 @@ end
 
 function Top.draw()
   if Top.players then
-    local x, y = screenWidth / 2 - topWidth / 2, screenHeight / 2 - 256
-    dxDrawRectangle(x, y, topWidth, 512, tocolor(0, 0, 0, fadeProgress * 191))
+    local topHeight = 132 + #Top.players * 32
+
+    local x, y = screenWidth / 2 - topWidth / 2, screenHeight / 2 - topHeight / 2
+    dxDrawRectangle(x, y, topWidth, topHeight, tocolor(0, 0, 0, fadeProgress * 191))
 
     x = x + 8
     y = y + 4

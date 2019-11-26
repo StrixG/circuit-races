@@ -193,26 +193,33 @@ function Race.onEnd()
   outputChatBox("Гонка окончена.", root, unpack(CHAT_MESSAGES_COLOR))
 
   local topPlayers = {}
-  if #Race.bestLapTime > 0 then
-    for player, lapTime in pairs(Race.bestLapTime) do
-      table.insert(topPlayers, {name = player.name, time = lapTime, vehicle = player.vehicle.name})
-    end
-    for i = 1, 9 do
-      table.insert(topPlayers, {name = "Name", time = math.random(1000, 124454645), vehicle = "Nissan Skyline GT-R 33"})
-    end
-    table.sort(topPlayers, function (player1, player2)
-      return player1.time > player2.time
-    end)
+  -- Commission
+  Race.prizePool = Race.prizePool * (1 - PRIZE_COMMISSION / 100)
+  
+  -- Top
+  for player, lapTime in pairs(Race.bestLapTime) do
+    table.insert(topPlayers, {player = player, name = player.name, time = lapTime, vehicle = player.vehicle.name})
+  end
+  table.sort(topPlayers, function (player1, player2)
+    return player1.time < player2.time
+  end)
 
-    for i, player in pairs(topPlayers) do
-      if i <= TOP_PLAYER_COUNT then
-
+  -- Give prizes
+  for i, player in pairs(topPlayers) do
+    if i <= TOP_PLAYER_COUNT then
+      player.prize = math.floor(Race.prizePool * PRIZE_COEFFS[i] / 100)
+      if isElement(player.player) then
+        player.player:giveMoney(player.prize)
       end
-      if i > 10 then
-        topPlayers[i] = nil
-      end
+    else
+      player.prize = 0
     end
+    if i > 10 then
+      topPlayers[i] = nil
+    end
+  end
 
+  if #topPlayers > 0 then
     outputChatBox("Победители:", root, unpack(CHAT_MESSAGES_COLOR))
     local topCount = math.min(TOP_PLAYER_COUNT, #topPlayers)
     for i = 1, topCount do
@@ -220,6 +227,8 @@ function Race.onEnd()
       outputChatBox(("%d. %s на %s. (%s, $%s)"):format(
         i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, time, numberFormat(topPlayers[i].prize, ' ')), root, unpack(CHAT_MESSAGES_COLOR))
     end
+  else
+    outputChatBox("Нет результатов гонки, так как никто не закончил круг.", root, unpack(CHAT_MESSAGES_COLOR))
   end
 
   triggerClientEvent(Race.participants, "Race.onEnd", resourceRoot, topPlayers)

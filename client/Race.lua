@@ -183,8 +183,10 @@ addEventHandler("Race.onLeave", resourceRoot, Race.stop)
 
 addEventHandler("Race.onEnd", resourceRoot, function (topPlayers)
   Race.stop()
-  Top.setVisible(true)
-  Top.setPlayers(topPlayers)
+  if #topPlayers > 0 then
+    Top.setVisible(true)
+    Top.setPlayers(topPlayers)
+  end
 end)
 
 addEventHandler("Race.askConfirmation", resourceRoot, function ()
