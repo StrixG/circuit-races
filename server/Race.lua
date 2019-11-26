@@ -163,8 +163,10 @@ function Race.start()
 
   -- Sync time with clients
   Race.updateLapTimer = Timer(function ()
-    local lapTime = getTickCount() - Race.lapStartTime[participant]
-    triggerClientEvent(Race.participants, "Race.updateLapTime", resourceRoot, lapTime)
+    for i, participant in pairs(Race.participants) do
+      local lapTime = getTickCount() - Race.lapStartTime[participant]
+      triggerClientEvent(participant, "Race.updateLapTime", resourceRoot, lapTime)
+    end
   end, TIME_SYNC_INTERVAL * 3, 0)
 
   Race.updateLeftTimer = Timer(function ()
