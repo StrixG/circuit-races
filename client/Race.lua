@@ -155,6 +155,10 @@ addEventHandler("Race.updateLapTime", resourceRoot, function (time)
   Race.lapTime = time
 end)
 
+addEventHandler("Race.updateLeftTime", resourceRoot, function (time)
+  Race.leftTime = time
+end)
+
 addEventHandler("Race.onLapRecord", resourceRoot, function (bestPlayer, bestPlayerTime)
   Race.bestPlayerName = bestPlayer.name
   Race.bestPlayerTime = bestPlayerTime

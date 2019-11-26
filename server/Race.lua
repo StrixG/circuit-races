@@ -190,15 +190,37 @@ function Race.start()
 end
 
 function Race.onEnd()
+  outputChatBox("Гонка окончена.", root, unpack(CHAT_MESSAGES_COLOR))
+
   local topPlayers = {}
-  for player, lapTime in pairs(Race.bestLapTime) do
-    table.insert(topPlayers, {player.name, lapTime, player.vehicle.name})
+  if #Race.bestLapTime > 0 then
+    for player, lapTime in pairs(Race.bestLapTime) do
+      table.insert(topPlayers, {name = player.name, time = lapTime, vehicle = player.vehicle.name})
+    end
+    for i = 1, 9 do
+      table.insert(topPlayers, {name = "Name", time = math.random(1000, 124454645), vehicle = "Nissan Skyline GT-R 33"})
+    end
+    table.sort(topPlayers, function (player1, player2)
+      return player1.time > player2.time
+    end)
+
+    for i, player in pairs(topPlayers) do
+      if i <= TOP_PLAYER_COUNT then
+
+      end
+      if i > 10 then
+        topPlayers[i] = nil
+      end
+    end
+
+    outputChatBox("Победители:", root, unpack(CHAT_MESSAGES_COLOR))
+    local topCount = math.min(TOP_PLAYER_COUNT, #topPlayers)
+    for i = 1, topCount do
+      local time = ("%d:%02d.%03d"):format(topPlayers[i].time / 1000 / 60, topPlayers[i].time / 1000 % 60, topPlayers[i].time % 1000)
+      outputChatBox(("%d. %s на %s. (%s, $%s)"):format(
+        i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, time, numberFormat(topPlayers[i].prize, ' ')), root, unpack(CHAT_MESSAGES_COLOR))
+    end
   end
-  table.sort(topPlayers, function (player1, player2)
-    return player1[2] > player2[2]
-  end)
-
-
 
   triggerClientEvent(Race.participants, "Race.onEnd", resourceRoot, topPlayers)
   Race.stop()
