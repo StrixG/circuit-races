@@ -9,11 +9,11 @@ local pastTickCount = 0
 
 function Waiting.draw()
   dxDrawText("До начала гонки",
-    0, 64, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.text,
+    0, 64, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.fonts.text,
     "center", "top", false, false, false, false, true)
   local time = ("%d:%02d.%03d"):format(Waiting.time / 1000 / 60, Waiting.time / 1000 % 60, Waiting.time % 1000)
   dxDrawText(time,
-    0, 88, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.time,
+    0, 88, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.fonts.time,
     "center", "top", false, false, false, false, true)
 
   -- Calculate time
@@ -28,7 +28,10 @@ function Waiting.setTime(time)
 end
 
 function Waiting.setVisible(visible)
-  Waiting.visible = visible
+  if Waiting.visible == visible then
+    return
+  end
+
   if visible then
     addEventHandler("onClientRender", root, Waiting.draw)
   else
@@ -36,4 +39,5 @@ function Waiting.setVisible(visible)
     Waiting.time = 0
     pastTickCount = 0
   end
+  Waiting.visible = visible
 end

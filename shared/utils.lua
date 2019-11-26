@@ -32,3 +32,7 @@ end
 function removeHexFromString(string)
 	return string.gsub(string, "#%x%x%x%x%x%x", "")
 end
+
+function isDriver(player)
+  return player.vehicle and player.vehicleSeat == 0
+end
