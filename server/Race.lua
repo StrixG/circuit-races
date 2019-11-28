@@ -377,14 +377,14 @@ function Race.showNextCheckpoint(player)
 
   local currentCheckpoint = Race.currentCheckpoint[player]
   -- Current checkpoint
-  local position = Race.checkpoints[currentCheckpoint]
-  local currentMarker = Marker(position[1], position[2], position[3], "checkpoint", 4,
+  local checkpointInfo = Race.checkpoints[currentCheckpoint]
+  local currentMarker = Marker(checkpointInfo[1], checkpointInfo[2], checkpointInfo[3], "checkpoint", checkpointInfo[4],
     CURRENT_CHECKPOINT_COLOR[1], CURRENT_CHECKPOINT_COLOR[2], CURRENT_CHECKPOINT_COLOR[3], 255, player)
 
   -- Next checkpoint
   local nextCheckpoint = currentCheckpoint % #Race.checkpoints + 1
-  local nextPosition = Race.checkpoints[nextCheckpoint]
-  local nextMarker = Marker(nextPosition[1], nextPosition[2], nextPosition[3], "checkpoint", 4,
+  local nextCheckpointInfo = Race.checkpoints[nextCheckpoint]
+  local nextMarker = Marker(nextCheckpointInfo[1], nextCheckpointInfo[2], nextCheckpointInfo[3], "checkpoint", nextCheckpointInfo[4],
     NEXT_CHECKPOINT_COLOR[1], NEXT_CHECKPOINT_COLOR[2], NEXT_CHECKPOINT_COLOR[3], 255, player)
 
   -- Set checkpoints targets
@@ -392,7 +392,7 @@ function Race.showNextCheckpoint(player)
     currentMarker:setIcon("finish")
   else
     currentMarker:setIcon("arrow")
-    currentMarker:setTarget(nextPosition[1], nextPosition[2], nextPosition[3])
+    currentMarker:setTarget(nextCheckpointInfo[1], nextCheckpointInfo[2], nextCheckpointInfo[3])
   end
 
   if nextCheckpoint == 1 then

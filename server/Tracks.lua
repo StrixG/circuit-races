@@ -1,6 +1,7 @@
 Tracks = {}
 
 Tracks.LIST_FILENAME = "track_list.json"
+Tracks.DEFAULT_CHECKPOINT_SIZE = 4
 
 Tracks.list = {}
 
@@ -54,7 +55,8 @@ function Tracks.getCheckpoints(track)
         local posX = node:getAttribute("x")
         local posY = node:getAttribute("y")
         local posZ = node:getAttribute("z")
-        table.insert(trackCheckpoints, {posX, posY, posZ})
+        local size = node:getAttribute("size") or Tracks.DEFAULT_CHECKPOINT_SIZE
+        table.insert(trackCheckpoints, {posX, posY, posZ, size})
       end
     end
     trackXml:unload()
