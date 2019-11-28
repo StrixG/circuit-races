@@ -63,18 +63,13 @@ function Race.stop()
 
   Race.checkpoints = nil
 
-  if isElement(Race.currentMarker) then
-    Race.currentMarker:destroy()
-  end
-  if isElement(Race.nextMarker) then
-    Race.nextMarker:destroy()
-  end
+  if isElement(Race.currentMarker) then Race.currentMarker:destroy() end
+  if isElement(Race.nextMarker) then Race.nextMarker:destroy() end
 
   Race.currentCheckpoint = nil
   Race.currentMarker = nil
   Race.currentBlip = nil
   Race.nextMarker = nil
-  Race.nextBlip = nil
 
   toggleAllControls(true, true, false)
   Confirmation.setVisible(false)
@@ -89,12 +84,8 @@ function Race.join()
 end
 
 function Race.showNextCheckpoint()
-  if isElement(Race.currentMarker) then
-    Race.currentMarker:destroy()
-  end
-  if isElement(Race.nextMarker) then
-    Race.nextMarker:destroy()
-  end
+  if isElement(Race.currentMarker) then Race.currentMarker:destroy() end
+  if isElement(Race.nextMarker) then Race.nextMarker:destroy() end
 
   if not Race.currentCheckpoint then
     Race.currentCheckpoint = 2
@@ -129,6 +120,10 @@ function Race.showNextCheckpoint()
     local nextNextPosition = Race.checkpoints[nextNextCheckpoint]
     nextMarker:setTarget(nextNextPosition[1], nextNextPosition[2], nextNextPosition[3])
   end
+
+  Race.currentBlip = Blip(0, 0, 0, 27)
+  Race.currentBlip:setParent(currentMarker)
+  Race.currentBlip:attach(currentMarker)
 
   Race.currentMarker = currentMarker
   Race.nextMarker = nextMarker
