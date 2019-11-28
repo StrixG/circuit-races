@@ -1,7 +1,7 @@
 Tracks = {}
 
 Tracks.LIST_FILENAME = "track_list.json"
-Tracks.DEFAULT_CHECKPOINT_SIZE = 4
+Tracks.DEFAULT_CHECKPOINT_SIZE = 8
 
 Tracks.list = {}
 
