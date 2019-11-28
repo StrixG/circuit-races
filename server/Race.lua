@@ -1,4 +1,5 @@
 addEvent("Race.onConfirm", true)
+addEvent("Race.onFinishLap", true)
 
 Race = {}
 
@@ -10,9 +11,6 @@ Race.vehicles = {}
 
 Race.checkpoints = {}
 
-Race.currentCheckpoint = {}
-Race.currentMarker = {}
-Race.nextMarker = {}
 Race.lapStartTime = {}
 Race.bestLapTime = {}
 Race.leftVehicleTimer = {}
@@ -88,6 +86,7 @@ function Race.stop()
   Race.updateLapTimer = nil
   Race.updateLeftTimer = nil
   Race.endTimer = nil
+
   Race.startMarker = nil
   Race.startBlip = nil
 
@@ -102,23 +101,11 @@ function Race.stop()
       timer:destroy()
     end
   end
-  for player, marker in pairs(Race.currentMarker) do
-    if isElement(marker) then
-      marker:destroy()
-    end
-  end
-  for player, marker in pairs(Race.nextMarker) do
-    if isElement(marker) then
-      marker:destroy()
-    end
-  end
+
   Race.leftVehicleTimer = {}
-  Race.currentCheckpoint = {}
-  Race.currentMarker = {}
-  Race.nextMarker = {}
   Race.lapStartTime = {}
   Race.bestLapTime = {}
-  
+
   Race.bestPlayer = nil
   Race.bestPlayerTime = nil
 end
@@ -133,10 +120,11 @@ function Race.start()
   if isTimer(Race.waitingTimer) then
     Race.waitingTimer:destroy()
   end
-  Race.waitingTimer = nil
   if isTimer(Race.updateWaitingTimer) then
     Race.updateWaitingTimer:destroy()
   end
+  
+  Race.waitingTimer = nil
   Race.updateWaitingTimer = nil
 
   for i = #Race.participants, 1, -1 do
@@ -180,7 +168,7 @@ function Race.start()
     outputChatBox("Вы заплатили $" .. numberFormat(PRIZE_POOL_FEE, ' ') .. " за участие в гонке.", participant, unpack(CHAT_MESSAGES_COLOR))
 
     Race.spawnPlayer(participant)
-    triggerClientEvent(participant, "Race.onStart", resourceRoot, Race.trackName, RACE_DURATION * 1000)
+    triggerClientEvent(participant, "Race.onStart", resourceRoot, Race.trackName, Race.checkpoints, RACE_DURATION * 1000)
   end
 
   outputChatBox("Гонка " .. Race.trackName .. " началась. Призовой фонд $" .. numberFormat(Race.prizePool, ' ') .. ".", root, unpack(CHAT_MESSAGES_COLOR))
@@ -215,6 +203,7 @@ function Race.onEnd()
     else
       player.prize = 0
     end
+    -- Remove other players from top
     if i > 10 then
       topPlayers[i] = nil
     end
@@ -244,9 +233,6 @@ function Race.spawnPlayer(player)
   player.vehicle:setPosition(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3] + 0.5)
   player.vehicle:setRotation(0, 0, directionZ)
   player.vehicle:setVelocity(0, 0, 0)
-  player:setCameraTarget()
-
-  Race.showNextCheckpoint(player)
 
   Race.lapStartTime[player] = getTickCount()
 end
@@ -272,7 +258,7 @@ function Race.join(player)
   if Race.started then
     Race.spawnPlayer(player)
     local timeLeft = Race.endTimer:getDetails()
-    triggerClientEvent(player, "Race.onStart", resourceRoot, Race.trackName, timeLeft)
+    triggerClientEvent(player, "Race.onStart", resourceRoot, Race.trackName, Race.checkpoints, timeLeft)
   end
 end
 
@@ -284,20 +270,10 @@ function Race.leave(player)
     end
   end
 
-  if isElement(Race.currentMarker[player]) then
-    Race.currentMarker[player]:destroy()
-  end
-  if isElement(Race.nextMarker[player]) then
-    Race.nextMarker[player]:destroy()
-  end
-
   Race.vehicles[player] = nil
 
   Race.lapStartTime[player] = nil
   Race.bestLapTime[player] = nil
-  Race.currentCheckpoint[player] = nil
-  Race.currentMarker[player] = nil
-  Race.nextMarker[player] = nil
 
   if Race.startMarker then
     Race.startMarker:setVisibleTo(player, true)
@@ -346,87 +322,30 @@ function Race.onStartMarkerHit(source, matchingDimension)
   end
 end
 
-function Race.onFinishLap(player, elapsedTime)
+function Race.onFinishLap()
+  local player = client
+
+  -- Calculate lap time
+  local newLapStartTime = getTickCount()
+  local elapsedTime = newLapStartTime - Race.lapStartTime[player]
+  Race.lapStartTime[player] = newLapStartTime
+
+  -- Calculate best lap time
   if not Race.bestLapTime[player] then
     Race.bestLapTime[player] = elapsedTime
   elseif elapsedTime < Race.bestLapTime[player] then
     Race.bestLapTime[player] = elapsedTime
   end
+  -- Determine the best player
   if not Race.bestPlayer or elapsedTime < Race.bestPlayerTime then
     Race.bestPlayer = player
     Race.bestPlayerTime = elapsedTime
-    playSoundFrontEnd(player, 45)
     triggerClientEvent(Race.participants, "Race.onLapRecord", resourceRoot, Race.bestPlayer, Race.bestPlayerTime)
   end
   triggerClientEvent(player, "Race.onFinishLap", resourceRoot, elapsedTime, Race.bestLapTime[player])
 end
 
-function Race.showNextCheckpoint(player)
-  if isElement(Race.currentMarker[player]) then
-    Race.currentMarker[player]:destroy()
-  end
-  if isElement(Race.nextMarker[player]) then
-    Race.nextMarker[player]:destroy()
-  end
-
-  if not Race.currentCheckpoint[player] then
-    Race.currentCheckpoint[player] = 2
-  else
-    Race.currentCheckpoint[player] = Race.currentCheckpoint[player] % #Race.checkpoints + 1
-  end
-
-  local currentCheckpoint = Race.currentCheckpoint[player]
-  -- Current checkpoint
-  local checkpointInfo = Race.checkpoints[currentCheckpoint]
-  local currentMarker = Marker(checkpointInfo[1], checkpointInfo[2], checkpointInfo[3], "checkpoint", checkpointInfo[4],
-    CURRENT_CHECKPOINT_COLOR[1], CURRENT_CHECKPOINT_COLOR[2], CURRENT_CHECKPOINT_COLOR[3], 255, player)
-
-  -- Next checkpoint
-  local nextCheckpoint = currentCheckpoint % #Race.checkpoints + 1
-  local nextCheckpointInfo = Race.checkpoints[nextCheckpoint]
-  local nextMarker = Marker(nextCheckpointInfo[1], nextCheckpointInfo[2], nextCheckpointInfo[3], "checkpoint", nextCheckpointInfo[4],
-    NEXT_CHECKPOINT_COLOR[1], NEXT_CHECKPOINT_COLOR[2], NEXT_CHECKPOINT_COLOR[3], 255, player)
-
-  -- Set checkpoints targets
-  if currentCheckpoint == 1 then
-    currentMarker:setIcon("finish")
-  else
-    currentMarker:setIcon("arrow")
-    currentMarker:setTarget(nextCheckpointInfo[1], nextCheckpointInfo[2], nextCheckpointInfo[3])
-  end
-
-  if nextCheckpoint == 1 then
-    nextMarker:setIcon("finish")
-  else
-    local nextNextCheckpoint = (currentCheckpoint + 1) % #Race.checkpoints + 1
-    local nextNextPosition = Race.checkpoints[nextNextCheckpoint]
-    nextMarker:setTarget(nextNextPosition[1], nextNextPosition[2], nextNextPosition[3])
-  end
-
-  Race.currentMarker[player] = currentMarker
-  Race.nextMarker[player] = nextMarker
-end
-
-addEventHandler("onMarkerHit", root, function (hitElement, matchingDimension)
-  if hitElement.type == "vehicle" and matchingDimension then
-    if Race.started then
-      local player = hitElement.occupant
-      if player and Race.isJoined(player) then
-        if source == Race.currentMarker[player] then
-          if Race.currentCheckpoint[player] == 1 then
-            Race.onFinishLap(player, getTickCount() - Race.lapStartTime[player])
-            Race.lapStartTime[player] = getTickCount()
-            
-            playSoundFrontEnd(player, 44)
-          else
-            playSoundFrontEnd(player, 43)
-          end
-          Race.showNextCheckpoint(player)
-        end
-      end
-    end
-  end
-end)
+addEventHandler("Race.onFinishLap", resourceRoot, Race.onFinishLap)
 
 addEventHandler("onPlayerVehicleEnter", root, function (vehicle, seat)
   if Race.isJoined(source) then

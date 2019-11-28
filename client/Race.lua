@@ -24,22 +24,23 @@ Race.started = false
 Race.joined = false
 Race.leftVehicle = false
 
-Race.leftTime = 0
-Race.lapTime = 0
-Race.bestLapTime = 0
-
 function Race.onConfirm(conirmed)
   toggleAllControls(true, true, false)
   triggerServerEvent("Race.onConfirm", resourceRoot, conirmed)
 end
 
-function Race.start(trackName, timeLeft)
+function Race.start(trackName, checkpoints, timeLeft)
   Race.waiting = false
   Race.started = true
   Race.trackName = trackName
+  Race.checkpoints = checkpoints
   Race.timeLeft = timeLeft
+  Race.lapTime = 0
 
   Waiting.setVisible(false)
+  Camera.setTarget(localPlayer)
+
+  Race.showNextCheckpoint()
 
   addEventHandler("onClientRender", root, Race.drawUI)
   addEventHandler("onClientPreRender", root, Race.update)
@@ -50,13 +51,30 @@ function Race.stop()
   Race.started = false
   Race.joined = false
   Race.trackName = false
-  Race.lapTime = 0
-  Race.bestLapTime = 0
+  Race.lapTime = nil
+  Race.bestLapTime = nil
   Race.timeLeft = nil
+
   Race.bestPlayerName = nil
   Race.bestPlayerTime = nil
+
   Race.leftVehicle = false
   Race.leftVehicleTime = nil
+
+  Race.checkpoints = nil
+
+  if isElement(Race.currentMarker) then
+    Race.currentMarker:destroy()
+  end
+  if isElement(Race.nextMarker) then
+    Race.nextMarker:destroy()
+  end
+
+  Race.currentCheckpoint = nil
+  Race.currentMarker = nil
+  Race.currentBlip = nil
+  Race.nextMarker = nil
+  Race.nextBlip = nil
 
   toggleAllControls(true, true, false)
   Confirmation.setVisible(false)
@@ -68,6 +86,52 @@ end
 
 function Race.join()
   Race.joined = true
+end
+
+function Race.showNextCheckpoint()
+  if isElement(Race.currentMarker) then
+    Race.currentMarker:destroy()
+  end
+  if isElement(Race.nextMarker) then
+    Race.nextMarker:destroy()
+  end
+
+  if not Race.currentCheckpoint then
+    Race.currentCheckpoint = 2
+  else
+    Race.currentCheckpoint = Race.currentCheckpoint % #Race.checkpoints + 1
+  end
+
+  local currentCheckpoint = Race.currentCheckpoint
+  -- Current checkpoint
+  local checkpointInfo = Race.checkpoints[currentCheckpoint]
+  local currentMarker = Marker(checkpointInfo[1], checkpointInfo[2], checkpointInfo[3], "checkpoint", checkpointInfo[4],
+    CURRENT_CHECKPOINT_COLOR[1], CURRENT_CHECKPOINT_COLOR[2], CURRENT_CHECKPOINT_COLOR[3], 255)
+
+  -- Next checkpoint
+  local nextCheckpoint = currentCheckpoint % #Race.checkpoints + 1
+  local nextCheckpointInfo = Race.checkpoints[nextCheckpoint]
+  local nextMarker = Marker(nextCheckpointInfo[1], nextCheckpointInfo[2], nextCheckpointInfo[3], "checkpoint", nextCheckpointInfo[4],
+    NEXT_CHECKPOINT_COLOR[1], NEXT_CHECKPOINT_COLOR[2], NEXT_CHECKPOINT_COLOR[3], 255)
+
+  -- Set checkpoints targets
+  if currentCheckpoint == 1 then
+    currentMarker:setIcon("finish")
+  else
+    currentMarker:setIcon("arrow")
+    currentMarker:setTarget(nextCheckpointInfo[1], nextCheckpointInfo[2], nextCheckpointInfo[3])
+  end
+
+  if nextCheckpoint == 1 then
+    nextMarker:setIcon("finish")
+  else
+    local nextNextCheckpoint = (currentCheckpoint + 1) % #Race.checkpoints + 1
+    local nextNextPosition = Race.checkpoints[nextNextCheckpoint]
+    nextMarker:setTarget(nextNextPosition[1], nextNextPosition[2], nextNextPosition[3])
+  end
+
+  Race.currentMarker = currentMarker
+  Race.nextMarker = nextMarker
 end
 
 -- Update times
@@ -114,10 +178,12 @@ function Race.drawUI()
     dxDrawText(time, 44, 290, 256, 32, tocolor(255, 255, 255, 255), 1, Assets.fonts.time)
 
     -- Best lap
-    dxDrawText("Лучший круг", 44, 350, 256, 32, tocolor(255, 255, 255, 255), 1, Assets.fonts.text)
+    if Race.bestLapTime then
+      dxDrawText("Лучший круг", 44, 350, 256, 32, tocolor(255, 255, 255, 255), 1, Assets.fonts.text)
 
-    time = ("%d:%02d.%03d"):format(Race.bestLapTime / 1000 / 60, Race.bestLapTime / 1000 % 60, Race.bestLapTime % 1000)
-    dxDrawText(time, 44, 375, 256, 32, tocolor(255, 255, 255, 255), 1, Assets.fonts.timeSmall)
+      time = ("%d:%02d.%03d"):format(Race.bestLapTime / 1000 / 60, Race.bestLapTime / 1000 % 60, Race.bestLapTime % 1000)
+      dxDrawText(time, 44, 375, 256, 32, tocolor(255, 255, 255, 255), 1, Assets.fonts.timeSmall)
+    end
 
     -- Best player
     if Race.bestPlayerName then
@@ -147,6 +213,23 @@ addEventHandler("Race.startWaiting", resourceRoot, function (time)
   Waiting.setTime(time)
 end)
 
+addEventHandler("onClientMarkerHit", root, function (hitElement, matchingDimension)
+  if Race.started and hitElement == localPlayer and matchingDimension then
+    if Race.joined then
+      if source == Race.currentMarker then
+        if Race.currentCheckpoint == 1 then
+          triggerServerEvent("Race.onFinishLap", resourceRoot)
+
+          playSoundFrontEnd(44)
+        else
+          playSoundFrontEnd(43)
+        end
+        Race.showNextCheckpoint()
+      end
+    end
+  end
+end)
+
 addEventHandler("Race.updateWaitingTime", resourceRoot, function (time)
   Waiting.setTime(time)
 end)
@@ -162,6 +245,7 @@ end)
 addEventHandler("Race.onLapRecord", resourceRoot, function (bestPlayer, bestPlayerTime)
   Race.bestPlayerName = bestPlayer.name
   Race.bestPlayerTime = bestPlayerTime
+  playSoundFrontEnd(45)
 end)
 
 addEventHandler("Race.onFinishLap", resourceRoot, function (lapTime, bestLapTime)
@@ -169,16 +253,9 @@ addEventHandler("Race.onFinishLap", resourceRoot, function (lapTime, bestLapTime
   Race.bestLapTime = bestLapTime
 end)
 
-addEventHandler("Race.onStart", resourceRoot, function (trackName, timeLeft)
-  Race.start(trackName, timeLeft)
-end)
-
-addEventHandler("Race.onCancel", resourceRoot, function ()
-  Race.stop()
-end)
-
+addEventHandler("Race.onStart", resourceRoot, Race.start)
+addEventHandler("Race.onCancel", resourceRoot, Race.stop)
 addEventHandler("Race.onJoin", resourceRoot, Race.join)
-
 addEventHandler("Race.onLeave", resourceRoot, Race.stop)
 
 addEventHandler("Race.onEnd", resourceRoot, function (topPlayers)
