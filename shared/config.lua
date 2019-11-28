@@ -1,13 +1,13 @@
 -- Time (in seconds)
 RACE_DURATION = 600 -- 10 min
-RACE_DELAY = 300 -- 5 min
+RACE_DELAY = 60 -- 1 min
 RACE_ANNOUNCE_INTERVAL = 1800 -- 30 min
 RACE_END_MESSAGE_TIME = 15
 RACE_LEFT_VEHICLE_TIME = 5
 TIME_SYNC_INTERVAL = 3
 
 -- Minimum number of participants
-MIN_PARTICIPANTS = 5
+MIN_PARTICIPANTS = 1
 -- Top players
 TOP_PLAYER_COUNT = 3
 
