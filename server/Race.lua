@@ -123,7 +123,7 @@ function Race.start()
   if isTimer(Race.updateWaitingTimer) then
     Race.updateWaitingTimer:destroy()
   end
-  
+
   Race.waitingTimer = nil
   Race.updateWaitingTimer = nil
 
@@ -183,7 +183,7 @@ function Race.onEnd()
   local topPlayers = {}
   -- Commission
   Race.prizePool = Race.prizePool * (1 - PRIZE_COMMISSION / 100)
-  
+
   -- Top
   for player, lapTime in pairs(Race.bestLapTime) do
     table.insert(topPlayers, {player = player, name = player.name, time = lapTime, vehicle = player.vehicle.name})
@@ -239,6 +239,11 @@ end
 
 function Race.join(player)
   if not Race.activeTrack or not player.vehicle then
+    return
+  end
+
+  local playerAccount = player:getAccount()
+  if not playerAccount then
     return
   end
 
