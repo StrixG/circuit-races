@@ -226,12 +226,12 @@ function Race.onEnd()
 end
 
 function Race.spawnPlayer(player)
-  local firstCheckpoint = Race.checkpoints[1]
-  local secondCheckpoint = Race.checkpoints[2]
+  -- local firstCheckpoint = Race.checkpoints[1]
+  -- local secondCheckpoint = Race.checkpoints[2]
 
-  local _, _, directionZ = findRotation3D(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3], secondCheckpoint[1], secondCheckpoint[2], secondCheckpoint[3])
-  player.vehicle:setPosition(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3] + 0.5)
-  player.vehicle:setRotation(0, 0, directionZ)
+  -- local _, _, directionZ = findRotation3D(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3], secondCheckpoint[1], secondCheckpoint[2], secondCheckpoint[3])
+  -- player.vehicle:setPosition(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3] + 0.5)
+  -- player.vehicle:setRotation(0, 0, directionZ)
   player.vehicle:setVelocity(0, 0, 0)
 
   Race.lapStartTime[player] = getTickCount()
@@ -273,17 +273,9 @@ function Race.leave(player)
   Race.vehicles[player] = nil
 
   Race.lapStartTime[player] = nil
-  Race.bestLapTime[player] = nil
 
   if Race.startMarker then
     Race.startMarker:setVisibleTo(player, true)
-  end
-
-  -- Reset best player
-  if Race.bestPlayer == player then
-    Race.bestPlayer = nil
-    Race.bestPlayerTime = nil
-    triggerClientEvent(Race.participants, "Race.onLapRecord", resourceRoot)
   end
 
   triggerClientEvent(player, "Race.onLeave", resourceRoot)
