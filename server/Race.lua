@@ -214,6 +214,7 @@ function Race.onEnd()
     if i <= TOP_PLAYER_COUNT then
       player.prize = math.floor(Race.prizePool * PRIZE_COEFFS[i] / 100)
       if isElement(player.player) then
+        -- TODO
         Race.givePrize(player.player:getAccount(), player.prize)
       end
     else
