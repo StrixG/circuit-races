@@ -7,6 +7,7 @@ Race.waiting = false
 Race.started = false
 
 Race.participants = {}
+Race.participantAccounts = {}
 Race.vehicles = {}
 
 Race.checkpoints = {}
@@ -42,11 +43,9 @@ function Race.prepare()
   end, TIME_SYNC_INTERVAL * 3, 0)
 
   local raceDelayMin = RACE_DELAY / 60
-  outputChatBox(("Скоро начнётся гонка %s!"):format(Race.trackName, root), root, unpack(CHAT_MESSAGES_COLOR))
-  outputChatBox(("До начала гонки %d %s."):format(
-    raceDelayMin, getPluralString(raceDelayMin, { "минут", "минута", "минуты" })), root,
-    unpack(CHAT_MESSAGES_COLOR)
-  )
+  outputMessage(("Скоро начнётся гонка %s!"):format(Race.trackName, root), root)
+  outputMessage(("До начала гонки %d %s."):format(
+    raceDelayMin, getPluralString(raceDelayMin, { "минут", "минута", "минуты" })))
 end
 
 function Race.stop()
@@ -131,17 +130,17 @@ function Race.start()
     local participant = Race.participants[i]
     if participant:getMoney() < PRIZE_POOL_FEE then
       Race.leave(participant)
-      outputChatBox("Недостаточно денег для участия в гонке.", participant, unpack(CHAT_MESSAGES_COLOR))
+      outputMessage("Недостаточно денег для участия в гонке.", participant)
     elseif not isDriver(participant) then
       Race.leave(participant)
-      outputChatBox("Вы вышли из машины, участие в гонке отменено.", participant, unpack(CHAT_MESSAGES_COLOR))
+      outputMessage("Вы вышли из машины, участие в гонке отменено.", participant)
     end
   end
 
   -- Cancel race if there are not enough participants
   if #Race.participants < MIN_PARTICIPANTS then
     Race.cancel()
-    outputChatBox("Гонка отменена из-за недостаточного количества участников.", root, unpack(CHAT_MESSAGES_COLOR))
+    outputMessage("Гонка отменена из-за недостаточного количества участников.")
     return
   end
 
@@ -165,20 +164,37 @@ function Race.start()
   -- Set players in position
   for i, participant in pairs(Race.participants) do
     participant:takeMoney(PRIZE_POOL_FEE)
-    outputChatBox("Вы заплатили $" .. numberFormat(PRIZE_POOL_FEE, ' ') .. " за участие в гонке.", participant, unpack(CHAT_MESSAGES_COLOR))
+    outputMessage("Вы заплатили $" .. numberFormat(PRIZE_POOL_FEE, ' ') .. " за участие в гонке.", participant)
 
     Race.spawnPlayer(participant)
     triggerClientEvent(participant, "Race.onStart", resourceRoot, Race.trackName, Race.checkpoints, RACE_DURATION * 1000)
   end
 
-  outputChatBox("Гонка " .. Race.trackName .. " началась. Призовой фонд $" .. numberFormat(Race.prizePool, ' ') .. ".", root, unpack(CHAT_MESSAGES_COLOR))
-  outputChatBox("Вы ещё можете успеть присоединиться к гонке.", root, unpack(CHAT_MESSAGES_COLOR))
+  outputMessage("Гонка " .. Race.trackName .. " началась. Призовой фонд $" .. numberFormat(Race.prizePool, ' ') .. ".")
+  outputMessage("Вы ещё можете успеть присоединиться к гонке.")
 
   Race.started = true
 end
 
+function Race.givePrize(account, amount)
+  local player = account:getPlayer()
+  if player then
+    player:giveMoney(amount)
+
+    outputDebugString(string.format("[Circuit Race] Player %s (%s, %s RUB) won drift event and earned %s",
+    player.name,
+    account.name,
+    tostring(player.money),
+    tostring(prize)))
+  else
+    exports.bank:giveAccountBankMoney(account, amount, "RUB")
+
+    outputDebugString(string.format("[Circuit Race] Offline player (%s) won drift event and earned %s (added to bank)", account.name, tostring(amount)))
+  end
+end
+
 function Race.onEnd()
-  outputChatBox("Гонка окончена.", root, unpack(CHAT_MESSAGES_COLOR))
+  outputMessage("Гонка окончена.")
 
   local topPlayers = {}
   -- Commission
@@ -198,7 +214,7 @@ function Race.onEnd()
     if i <= TOP_PLAYER_COUNT then
       player.prize = math.floor(Race.prizePool * PRIZE_COEFFS[i] / 100)
       if isElement(player.player) then
-        player.player:giveMoney(player.prize)
+        Race.givePrize(player.player:getAccount(), player.prize)
       end
     else
       player.prize = 0
@@ -210,15 +226,15 @@ function Race.onEnd()
   end
 
   if #topPlayers > 0 then
-    outputChatBox("Победители:", root, unpack(CHAT_MESSAGES_COLOR))
+    outputMessage("Победители:")
     local topCount = math.min(TOP_PLAYER_COUNT, #topPlayers)
     for i = 1, topCount do
       local time = ("%d:%02d.%03d"):format(topPlayers[i].time / 1000 / 60, topPlayers[i].time / 1000 % 60, topPlayers[i].time % 1000)
-      outputChatBox(("%d. %s на %s (%s, $%s)"):format(
-        i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, time, numberFormat(topPlayers[i].prize, ' ')), root, unpack(CHAT_MESSAGES_COLOR))
+      outputMessage(("%d. %s на %s (%s, $%s)"):format(
+        i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, time, numberFormat(topPlayers[i].prize, ' ')))
     end
   else
-    outputChatBox("Нет результатов гонки, так как никто не закончил круг.", root, unpack(CHAT_MESSAGES_COLOR))
+    outputMessage("Нет результатов гонки, так как никто не закончил круг.")
   end
 
   triggerClientEvent(Race.participants, "Race.onEnd", resourceRoot, topPlayers)
@@ -226,14 +242,6 @@ function Race.onEnd()
 end
 
 function Race.spawnPlayer(player)
-  -- local firstCheckpoint = Race.checkpoints[1]
-  -- local secondCheckpoint = Race.checkpoints[2]
-
-  -- local _, _, directionZ = findRotation3D(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3], secondCheckpoint[1], secondCheckpoint[2], secondCheckpoint[3])
-  -- player.vehicle:setPosition(firstCheckpoint[1], firstCheckpoint[2], firstCheckpoint[3] + 0.5)
-  -- player.vehicle:setRotation(0, 0, directionZ)
-  player.vehicle:setVelocity(0, 0, 0)
-
   Race.lapStartTime[player] = getTickCount()
 end
 
@@ -254,6 +262,7 @@ function Race.join(player)
   end
 
   table.insert(Race.participants, player)
+  table.insert(Race.participantAccounts, playerAccount)
   Race.vehicles[player] = player.vehicle
 
   Race.startMarker:setVisibleTo(player, true) -- bug workaround
@@ -288,7 +297,7 @@ end
 
 function Race.isJoined(player)
   for i, participant in pairs(Race.participants) do
-    if participant == player then
+    if participant.player == player then
       return true
     end
   end
@@ -299,18 +308,23 @@ end
 function Race.onStartMarkerHit(source, matchingDimension)
   if source.type == "player" and matchingDimension then
     if Race.waiting or Race.started then
+      local playerAccount = source:getAccount()
+      if not playerAccount then
+        return
+      end
+
       if Race.isJoined(source) then
         if Race.waiting then
-          outputChatBox("Вы уже участвуете в гонке. Ожидайте начала.", source, unpack(CHAT_MESSAGES_COLOR))
+          outputMessage("Вы уже участвуете в гонке. Ожидайте начала.", source)
         end
         return
       end
       if not isDriver(source) then
-        outputChatBox("Вы должны быть в машине, чтобы принять участие в гонке.", source, unpack(CHAT_MESSAGES_COLOR))
+        outputMessage("Вы должны быть в машине, чтобы принять участие в гонке.", source)
         return
       end
       if source:getMoney() < PRIZE_POOL_FEE then
-        outputChatBox("Недостаточно денег для участия в гонке.", source, unpack(CHAT_MESSAGES_COLOR))
+        outputMessage("Недостаточно денег для участия в гонке.", source)
         return
       end
       toggleAllControls(source, false, true, false)
@@ -355,9 +369,9 @@ end)
 
 addEventHandler("onPlayerVehicleExit", root, function ()
   if Race.isJoined(source) then
-    outputChatBox("Вернитесь в машину, чтобы продолжить гонку.", source, unpack(CHAT_MESSAGES_COLOR))
+    outputMessage("Вернитесь в машину, чтобы продолжить гонку.", source)
     Race.leftVehicleTimer[source] = Timer(function (player)
-      outputChatBox("Вы вышли из машины. Участие в гонке отменено.", player, unpack(CHAT_MESSAGES_COLOR))
+      outputMessage("Вы вышли из машины. Участие в гонке отменено.", player)
       Race.leave(player)
     end, RACE_LEFT_VEHICLE_TIME * 1000, 1, source)
   end
@@ -366,20 +380,20 @@ end)
 addEventHandler("Race.onConfirm", resourceRoot, function (confirmed)
   if confirmed then
     if client:getMoney() < PRIZE_POOL_FEE then
-      outputChatBox("Недостаточно денег для участия в гонке.", client, unpack(CHAT_MESSAGES_COLOR))
+      outputMessage("Недостаточно денег для участия в гонке.", client)
       return
     end
 
     Race.join(client)
-    outputChatBox("Вы присоединились к гонке.", client, unpack(CHAT_MESSAGES_COLOR))
+    outputMessage("Вы присоединились к гонке.", client)
 
     if Race.waiting then
-      outputChatBox("Ожидайте начала.", client, unpack(CHAT_MESSAGES_COLOR))
+      outputMessage("Ожидайте начала.", client)
       local waitingTime = Race.waitingTimer:getDetails()
       triggerClientEvent(client, "Race.startWaiting", resourceRoot, waitingTime)
     end
   else
-    outputChatBox("Вы отказались от участия в гонке.", source, unpack(CHAT_MESSAGES_COLOR))
+    outputMessage("Вы отказались от участия в гонке.", source)
   end
 end)
 
@@ -393,7 +407,7 @@ addEventHandler("onElementDestroy", root, function ()
   if Race.activeTrack and source.type == "vehicle" then
     for player, vehicle in pairs(Race.vehicles) do
       if source == vehicle then
-        outputChatBox("Ваша машина уничтожена. Участие в гонке отменено.", player, unpack(CHAT_MESSAGES_COLOR))
+        outputMessage("Ваша машина уничтожена. Участие в гонке отменено.", player)
         Race.leave(player)
         break
       end

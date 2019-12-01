@@ -10,3 +10,7 @@ addEventHandler("onResourceStart", resourceRoot, function ()
     end,
   RACE_ANNOUNCE_INTERVAL * 1000, 0)
 end)
+
+function outputMessage(message, to)
+  outputChatBox("[Гонка] #FFFFFF" .. message, to, unpack(ACCENT_COLOR))
+end

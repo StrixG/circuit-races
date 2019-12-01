@@ -41,10 +41,10 @@ end
 
 function Confirmation.draw()
   dxDrawRectangle(0, 0, screenWidth, screenHeight, tocolor(0, 0, 0, fadeProgress * 191))
-  dxDrawText("Принять участие в гонке за\n#1F85DE$" .. numberFormat(PRIZE_POOL_FEE, ' ') .. "?",
+  dxDrawText(("Принять участие в гонке за\n%s$%s?"):format(ACCENT_COLOR_HEX, numberFormat(PRIZE_POOL_FEE, ' ')),
     0, 0, screenWidth, screenHeight, tocolor(255, 255, 255, fadeProgress * 255), 1, Assets.fonts.confirmation,
     "center", "center", false, false, false, true, true)
-  dxDrawText("Backspace #1F85DEОтказаться    #FFFFFFEnter #1F85DEСогласиться",
+  dxDrawText(("Backspace %sОтказаться    #FFFFFFEnter %sСогласиться"):format(ACCENT_COLOR_HEX, ACCENT_COLOR_HEX),
     0, 0, screenWidth, screenHeight - 64, tocolor(255, 255, 255, fadeProgress * 255), 1, Assets.fonts.text,
     "center", "bottom", false, false, false, true, true)
 end
