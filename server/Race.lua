@@ -296,6 +296,11 @@ function Race.join(player)
 end
 
 function Race.leave(player, remove)
+  if isTimer(Race.leftVehicleTimer[player]) then
+    Race.leftVehicleTimer[player]:destroy()
+  end
+  Race.leftVehicleTimer[source] = nil
+
   Race.vehicles[player] = nil
 
   Race.lapStartTime[player] = nil
@@ -343,9 +348,8 @@ function Race.onStartMarkerHit(source, matchingDimension)
         if Race.waiting then
           outputMessage("Вы уже участвуете в гонке. Ожидайте начала.", source)
         elseif not Race.isInRace(source) then
-          Race.join()
+          Race.join(source)
         end
-        return
       elseif not isDriver(source) then
         outputMessage("Вы должны быть в машине, чтобы принять участие в гонке.", source)
       elseif source:getMoney() < PRIZE_POOL_FEE then
@@ -399,7 +403,7 @@ addEventHandler("onPlayerVehicleEnter", root, function (vehicle, seat)
 end)
 
 addEventHandler("onPlayerVehicleExit", root, function ()
-  if Race.isInRace(source) then
+  if Race.isJoined(source) then
     outputMessage("Вернитесь в машину, чтобы продолжить гонку.", source)
     Race.leftVehicleTimer[source] = Timer(function (player)
       outputMessage("Вы вышли из машины. Участие в гонке отменено.", player)
