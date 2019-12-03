@@ -298,7 +298,7 @@ function Race.leave(player, remove)
   if isTimer(Race.leftVehicleTimer[player]) then
     Race.leftVehicleTimer[player]:destroy()
   end
-  Race.leftVehicleTimer[source] = nil
+  Race.leftVehicleTimer[player] = nil
 
   Race.vehicles[player] = nil
 
