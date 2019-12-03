@@ -144,8 +144,6 @@ function Race.start()
     return
   end
 
-  Race.prizePool = #Race.participants * PRIZE_POOL_FEE
-
   Race.endTimer = Timer(Race.onEnd, RACE_DURATION * 1000, 1)
 
   -- Sync time with clients
@@ -198,6 +196,7 @@ end
 function Race.onEnd()
   outputMessage("Гонка окончена.")
 
+  Race.prizePool = #Race.participantAccounts * PRIZE_POOL_FEE
   -- Commission
   Race.prizePool = Race.prizePool * (1 - PRIZE_COMMISSION / 100)
   
