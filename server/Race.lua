@@ -210,7 +210,7 @@ function Race.onEnd()
   -- Sort
   for i = 1, TOP_PLAYER_COUNT do
     local minValue = topPlayers[i]
-    for j = i + 1, #list do
+    for j = i + 1, #topPlayers do
       if topPlayers[j] < minValue then
         minValue = topPlayers[j]
         topPlayers[i], topPlayers[j] = topPlayers[j], topPlayers[i]
