@@ -85,7 +85,7 @@ function Top.draw()
       dxDrawText(Top.players[i].vehicle, x + vehicleOffset, y, x, y, color, 1, Assets.fonts.top)
       local time = ("%d:%02d.%03d"):format(Top.players[i].time / 1000 / 60, Top.players[i].time / 1000 % 60, Top.players[i].time % 1000)
       dxDrawText(time, x + timeOffset, y, x, y, color, 1, Assets.fonts.top)
-      dxDrawText("$" .. numberFormat(Top.players[i].prize, ' '), x + prizeOffset, y, x, y, color, 1, Assets.fonts.top)
+      dxDrawText(numberFormat(Top.players[i].prize, ' ') .. " руб.", x + prizeOffset, y, x, y, color, 1, Assets.fonts.top)
 
       y = y + 32
     end

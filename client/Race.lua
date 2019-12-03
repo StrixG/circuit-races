@@ -160,7 +160,7 @@ function Race.update(deltaTime)
 end
 
 function Race.drawUI()
-  if Race.started then
+  if Race.started and Race.joined then
     -- Time left
     if Race.timeLeft <= RACE_END_MESSAGE_TIME * 1000 then
       dxDrawText("До конца гонки", 44, 200, 256, 32, tocolor(255, 255, 255, 255), 1, Assets.fonts.text)

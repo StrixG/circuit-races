@@ -115,7 +115,6 @@ function Race.cancel()
 end
 
 function Race.start()
-  Race.waiting = false
   if isTimer(Race.waitingTimer) then
     Race.waitingTimer:destroy()
   end
@@ -170,9 +169,10 @@ function Race.start()
     triggerClientEvent(participant, "Race.onStart", resourceRoot, Race.trackName, Race.checkpoints, RACE_DURATION * 1000)
   end
 
-  outputMessage("Гонка " .. Race.trackName .. " началась. Призовой фонд $" .. numberFormat(Race.prizePool, ' ') .. ".")
+  outputMessage("Гонка " .. Race.trackName .. " началась. Призовой фонд " .. numberFormat(Race.prizePool, ' ') .. " руб.")
   outputMessage("Вы ещё можете успеть присоединиться к гонке.")
 
+  Race.waiting = false
   Race.started = true
 end
 
@@ -185,7 +185,7 @@ function Race.givePrize(account, amount)
       player.name,
       account.name,
       tostring(player.money),
-      tostring(prize)))
+      tostring(amount)))
   else
     -- exports.bank:giveAccountBankMoney(account, amount, "RUB")
 
@@ -203,7 +203,7 @@ function Race.onEnd()
   -- Top
   local topPlayers = {}
   for account, lapTime in pairs(Race.bestLapTime) do
-    table.insert(topPlayers, {account = account, name = player.name, time = lapTime, vehicle = Race.bestLapVehicleName[account]})
+    table.insert(topPlayers, {account = account, name = Race.participantNames[account], time = lapTime, vehicle = Race.bestLapVehicleName[account]})
   end
 
   -- Sort
@@ -228,7 +228,6 @@ function Race.onEnd()
       else
         player.prize = 0
       end
-      player.account = nil
     else
       topPlayers[i] = nil
     end
@@ -239,11 +238,17 @@ function Race.onEnd()
     local topCount = math.min(WINNER_COUNT, #topPlayers)
     for i = 1, topCount do
       local time = ("%d:%02d.%03d"):format(topPlayers[i].time / 1000 / 60, topPlayers[i].time / 1000 % 60, topPlayers[i].time % 1000)
-      outputMessage(("%d. %s на %s (%s, $%s)"):format(
-        i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, time, numberFormat(topPlayers[i].prize, ' ')))
+      outputMessage(("%d. %s на %s %s(%s, %s руб.)"):format(
+        i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, ACCENT_COLOR_HEX, time, numberFormat(topPlayers[i].prize, ' ')))
+
+      local player = topPlayers[i].account:getPlayer()
+      if player then
+        outputMessage(("Поздравляем! Вы заняли %d место в гонке и получили %s%s руб."):format(
+          i, ACCENT_COLOR_HEX, numberFormat(topPlayers[i].prize, ' ')), player)
+      end
     end
   else
-    outputMessage("Нет результатов, так как никто не закончил круг.")
+    outputMessage("Нет результатов, так как никто не завершил круг.")
   end
 
   triggerClientEvent(Race.participants, "Race.onEnd", resourceRoot, topPlayers)
@@ -270,8 +275,8 @@ function Race.join(player)
 
   local joined = Race.isJoined(player)
 
+  table.insert(Race.participants, player)
   if not joined then
-    table.insert(Race.participants, player)
     table.insert(Race.participantAccounts, playerAccount)
     Race.participantNames[playerAccount] = player.name
   end
@@ -285,7 +290,7 @@ function Race.join(player)
   if Race.started then
     if not joined then
       player:takeMoney(PRIZE_POOL_FEE)
-      outputMessage("Вы заплатили $" .. numberFormat(PRIZE_POOL_FEE, ' ') .. " за участие в гонке.", player)
+      outputMessage("Вы заплатили " .. numberFormat(PRIZE_POOL_FEE, ' ') .. " руб. за участие в гонке.", player)
     end
 
     Race.spawnPlayer(player)
@@ -294,7 +299,7 @@ function Race.join(player)
   end
 end
 
-function Race.leave(player, remove)
+function Race.leave(player)
   if isTimer(Race.leftVehicleTimer[player]) then
     Race.leftVehicleTimer[player]:destroy()
   end
@@ -304,10 +309,18 @@ function Race.leave(player, remove)
 
   Race.lapStartTime[player] = nil
 
-  if remove then
-    for i, participant in pairs(Race.participants) do
-      if participant == player then
-        table.remove(Race.participants, i)
+  for i, participant in pairs(Race.participants) do
+    if participant == player then
+      table.remove(Race.participants, i)
+      break
+    end
+  end
+
+  if Race.waiting then
+    local playerAccount = player:getAccount()
+    for i, participantAccount in pairs(Race.participantAccounts) do
+      if participantAccount == playerAccount then
+        table.remove(Race.participantAccounts, i)
         break
       end
     end
@@ -339,7 +352,7 @@ function Race.onStartMarkerHit(source, matchingDimension)
   if source.type == "player" and matchingDimension then
     if Race.waiting or Race.started then
       local playerAccount = source:getAccount()
-      if not playerAccount then
+      if playerAccount:isGuest() then
         return
       end
 
@@ -380,7 +393,7 @@ function Race.onFinishLap()
     -- Race.bestLapVehicleName[playerAccount] = exports.car_system:getVehicleModName(Race.vehicles[player].model)
   end
   -- Determine the best player
-  if not Race.bestPlayer or elapsedTime < Race.bestPlayerTime then
+  if not Race.bestPlayerName or elapsedTime < Race.bestPlayerTime then
     Race.bestPlayerName = player.name
     Race.bestPlayerTime = elapsedTime
     for i, participantAccount in pairs(Race.participants) do
@@ -433,7 +446,7 @@ end)
 
 -- Remove a player from the race when he quits
 addEventHandler("onPlayerQuit", root, function ()
-  Race.leave(source, true)
+  Race.leave(source)
 end)
 
 -- Remove a player from the race when his vehicle is destroyed

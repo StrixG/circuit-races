@@ -17,7 +17,7 @@ function Waiting.draw()
       0, 88, screenWidth, screenHeight, tocolor(255, 255, 255, 255), 1, Assets.fonts.time,
       "center", "top", false, false, false, false, true)
   else
-    local time = math.ceil(Waiting.time / 1000)
+    local time = math.max(1, math.ceil(Waiting.time / 1000))
     dxDrawText(time,
       8, 8, screenWidth, screenHeight, tocolor(0, 0, 0, 191), 1, Assets.fonts.countdown,
       "center", "center", false, false, false, false, true)
