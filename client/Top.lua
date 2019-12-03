@@ -74,7 +74,7 @@ function Top.draw()
     y = y + 32
     for i, player in pairs(Top.players) do
       local color
-      if i <= TOP_PLAYER_COUNT then
+      if i <= WINNER_COUNT then
         color = tocolor(31, 133, 222, fadeProgress * 255)
       else
         color = tocolor(255, 255, 255, fadeProgress * 255)
@@ -98,7 +98,7 @@ end
 
 addEventHandler("onClientKey", root, function (key, state)
   if Top.visible then
-    if key == "enter" or key == "space" or key == "backspace" then
+    if key == "enter" or key == "backspace" then
       Top.setVisible(false)
       cancelEvent()
     end

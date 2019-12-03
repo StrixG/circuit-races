@@ -30,6 +30,7 @@ function Race.onConfirm(conirmed)
 end
 
 function Race.start(trackName, checkpoints, timeLeft)
+  print("START")
   Race.waiting = false
   Race.started = true
   Race.trackName = trackName
@@ -38,7 +39,6 @@ function Race.start(trackName, checkpoints, timeLeft)
   Race.lapTime = 0
 
   Waiting.setVisible(false)
-  Camera.setTarget(localPlayer)
 
   Race.showNextCheckpoint()
 
@@ -47,6 +47,7 @@ function Race.start(trackName, checkpoints, timeLeft)
 end
 
 function Race.stop()
+  print("STOP")
   Race.waiting = false
   Race.started = false
   Race.joined = false
@@ -79,8 +80,11 @@ function Race.stop()
   removeEventHandler("onClientPreRender", root, Race.update)
 end
 
-function Race.join()
+function Race.join(bestLapTime, bestPlayerName, bestPlayerTime)
   Race.joined = true
+  Race.bestLapTime = bestLapTime
+  Race.bestPlayerName = bestLapTime
+  Race.bestPlayerTime = bestPlayerTime
 end
 
 function Race.showNextCheckpoint()
@@ -237,8 +241,8 @@ addEventHandler("Race.updateLeftTime", resourceRoot, function (time)
   Race.leftTime = time
 end)
 
-addEventHandler("Race.onLapRecord", resourceRoot, function (bestPlayer, bestPlayerTime)
-  Race.bestPlayerName = bestPlayer.name
+addEventHandler("Race.onLapRecord", resourceRoot, function (bestPlayerName, bestPlayerTime)
+  Race.bestPlayerName = bestPlayerName
   Race.bestPlayerTime = bestPlayerTime
   playSoundFrontEnd(45)
 end)

@@ -9,6 +9,7 @@ function Assets.load()
   Assets.fonts.bold = DxFont("assets/FiraSansCondensed-Bold.ttf", 24)
   Assets.fonts.time = DxFont("assets/OpenSans-BoldItalic.ttf", 36)
   Assets.fonts.timeSmall = DxFont("assets/OpenSans-BoldItalic.ttf", 18)
+  Assets.fonts.countdown = DxFont("assets/OpenSans-BoldItalic.ttf", 48)
 end
 
 addEventHandler("onClientResourceStart", resourceRoot, Assets.load)

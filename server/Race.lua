@@ -8,7 +8,9 @@ Race.started = false
 
 Race.participants = {}
 Race.participantAccounts = {}
+Race.participantNames = {}
 Race.vehicles = {}
+Race.bestLapVehicleName = {}
 
 Race.checkpoints = {}
 
@@ -51,11 +53,6 @@ end
 function Race.stop()
   Race.waiting = false
 
-  -- for i, participant in pairs(Race.participants) do
-  --   participant.vehicle:setFrozen(false)
-  --   toggleAllControls(participant, true, true, false)
-  -- end
-
   if isTimer(Race.waitingTimer) then
     Race.waitingTimer:destroy()
   end
@@ -93,7 +90,10 @@ function Race.stop()
   Race.trackName = nil
   Race.checkpoints = {}
   Race.participants = {}
+  Race.participantAccounts = {}
+  Race.participantNames = {}
   Race.vehicles = {}
+  Race.bestLapVehicleName = {}
 
   for player, timer in pairs(Race.leftVehicleTimer) do
     if isTimer(timer) then
@@ -151,8 +151,10 @@ function Race.start()
   -- Sync time with clients
   Race.updateLapTimer = Timer(function ()
     for i, participant in pairs(Race.participants) do
-      local lapTime = getTickCount() - Race.lapStartTime[participant]
-      triggerClientEvent(participant, "Race.updateLapTime", resourceRoot, lapTime)
+      if Race.lapStartTime[participant] then
+        local lapTime = getTickCount() - Race.lapStartTime[participant]
+        triggerClientEvent(participant, "Race.updateLapTime", resourceRoot, lapTime)
+      end
     end
   end, TIME_SYNC_INTERVAL * 3, 0)
 
@@ -181,61 +183,68 @@ function Race.givePrize(account, amount)
   if player then
     player:giveMoney(amount)
 
-    outputDebugString(string.format("[Circuit Race] Player %s (%s, %s RUB) won drift event and earned %s",
-    player.name,
-    account.name,
-    tostring(player.money),
-    tostring(prize)))
+    outputDebugString(string.format("[Circuit Race] Player %s (%s, %s RUB) won race and earned %s",
+      player.name,
+      account.name,
+      tostring(player.money),
+      tostring(prize)))
   else
-    exports.bank:giveAccountBankMoney(account, amount, "RUB")
+    -- exports.bank:giveAccountBankMoney(account, amount, "RUB")
 
-    outputDebugString(string.format("[Circuit Race] Offline player (%s) won drift event and earned %s (added to bank)", account.name, tostring(amount)))
+    outputDebugString(string.format("[Circuit Race] Offline player (%s) won race and earned %s (added to bank)", account.name, tostring(amount)))
   end
 end
 
 function Race.onEnd()
   outputMessage("Гонка окончена.")
 
-  local topPlayers = {}
   -- Commission
   Race.prizePool = Race.prizePool * (1 - PRIZE_COMMISSION / 100)
-
+  
   -- Top
-  for player, lapTime in pairs(Race.bestLapTime) do
-    table.insert(topPlayers, {player = player, name = player.name, time = lapTime, vehicle = player.vehicle.name})
+  local topPlayers = {}
+  for account, lapTime in pairs(Race.bestLapTime) do
+    table.insert(topPlayers, {account = account, name = player.name, time = lapTime, vehicle = Race.bestLapVehicleName[account]})
   end
 
-  table.sort(topPlayers, function (player1, player2)
-    return player1.time < player2.time
-  end)
+  -- Sort
+  for i = 1, TOP_PLAYER_COUNT do
+    local minValue = topPlayers[i]
+    for j = i + 1, #list do
+      if topPlayers[j] < minValue then
+        minValue = topPlayers[j]
+        topPlayers[i], topPlayers[j] = topPlayers[j], topPlayers[i]
+      end
+    end
+  end
 
   -- Give prizes
   for i, player in pairs(topPlayers) do
     if i <= TOP_PLAYER_COUNT then
-      player.prize = math.floor(Race.prizePool * PRIZE_COEFFS[i] / 100)
-      if isElement(player.player) then
-        -- TODO
-        Race.givePrize(player.player:getAccount(), player.prize)
+      if i <= WINNER_COUNT then
+        player.prize = math.floor(Race.prizePool * PRIZE_COEFFS[i] / 100)
+        if player.account then
+          Race.givePrize(player.account, player.prize)
+        end
+      else
+        player.prize = 0
       end
+      player.account = nil
     else
-      player.prize = 0
-    end
-    -- Remove other players from top
-    if i > 10 then
       topPlayers[i] = nil
     end
   end
 
   if #topPlayers > 0 then
     outputMessage("Победители:")
-    local topCount = math.min(TOP_PLAYER_COUNT, #topPlayers)
+    local topCount = math.min(WINNER_COUNT, #topPlayers)
     for i = 1, topCount do
       local time = ("%d:%02d.%03d"):format(topPlayers[i].time / 1000 / 60, topPlayers[i].time / 1000 % 60, topPlayers[i].time % 1000)
       outputMessage(("%d. %s на %s (%s, $%s)"):format(
         i, removeHexFromString(topPlayers[i].name), topPlayers[i].vehicle, time, numberFormat(topPlayers[i].prize, ' ')))
     end
   else
-    outputMessage("Нет результатов гонки, так как никто не закончил круг.")
+    outputMessage("Нет результатов, так как никто не закончил круг.")
   end
 
   triggerClientEvent(Race.participants, "Race.onEnd", resourceRoot, topPlayers)
@@ -256,38 +265,49 @@ function Race.join(player)
     return
   end
 
-  for i, participant in pairs(Race.participants) do
-    if participant == player then
-      return
-    end
+  if Race.isInRace(player) then
+    return
   end
 
-  table.insert(Race.participants, player)
-  table.insert(Race.participantAccounts, playerAccount)
+  local joined = Race.isJoined(player)
+
+  if not joined then
+    table.insert(Race.participants, player)
+    table.insert(Race.participantAccounts, playerAccount)
+    Race.participantNames[playerAccount] = player.name
+  end
+
   Race.vehicles[player] = player.vehicle
 
   Race.startMarker:setVisibleTo(player, true) -- bug workaround
   Race.startMarker:setVisibleTo(player, false)
 
-  triggerClientEvent(player, "Race.onJoin", resourceRoot)
+  triggerClientEvent(player, "Race.onJoin", resourceRoot, Race.bestLapTime[playerAccount], Race.bestPlayerName, Race.bestPlayerTime)
   if Race.started then
+    if not joined then
+      player:takeMoney(PRIZE_POOL_FEE)
+      outputMessage("Вы заплатили $" .. numberFormat(PRIZE_POOL_FEE, ' ') .. " за участие в гонке.", player)
+    end
+
     Race.spawnPlayer(player)
     local timeLeft = Race.endTimer:getDetails()
     triggerClientEvent(player, "Race.onStart", resourceRoot, Race.trackName, Race.checkpoints, timeLeft)
   end
 end
 
-function Race.leave(player)
-  for i, participant in pairs(Race.participants) do
-    if participant == player then
-      table.remove(Race.participants, i)
-      break
-    end
-  end
-
+function Race.leave(player, remove)
   Race.vehicles[player] = nil
 
   Race.lapStartTime[player] = nil
+
+  if remove then
+    for i, participant in pairs(Race.participants) do
+      if participant == player then
+        table.remove(Race.participants, i)
+        break
+      end
+    end
+  end
 
   if Race.startMarker then
     Race.startMarker:setVisibleTo(player, true)
@@ -297,13 +317,18 @@ function Race.leave(player)
 end
 
 function Race.isJoined(player)
-  for i, participant in pairs(Race.participants) do
-    if participant.player == player then
+  local account = player:getAccount()
+  for i, participantAccount in pairs(Race.participantAccounts) do
+    if participantAccount == account then
       return true
     end
   end
 
   return false
+end
+
+function Race.isInRace(player)
+  return Race.lapStartTime[player] and true or false
 end
 
 function Race.onStartMarkerHit(source, matchingDimension)
@@ -317,25 +342,28 @@ function Race.onStartMarkerHit(source, matchingDimension)
       if Race.isJoined(source) then
         if Race.waiting then
           outputMessage("Вы уже участвуете в гонке. Ожидайте начала.", source)
+        elseif not Race.isInRace(source) then
+          Race.join()
         end
         return
-      end
-      if not isDriver(source) then
+      elseif not isDriver(source) then
         outputMessage("Вы должны быть в машине, чтобы принять участие в гонке.", source)
-        return
-      end
-      if source:getMoney() < PRIZE_POOL_FEE then
+      elseif source:getMoney() < PRIZE_POOL_FEE then
         outputMessage("Недостаточно денег для участия в гонке.", source)
-        return
+      else
+        toggleAllControls(source, false, true, false)
+        triggerClientEvent(source, "Race.askConfirmation", resourceRoot)
       end
-      toggleAllControls(source, false, true, false)
-      triggerClientEvent(source, "Race.askConfirmation", resourceRoot)
     end
   end
 end
 
 function Race.onFinishLap()
   local player = client
+  local playerAccount = player:getAccount()
+  if not playerAccount then
+    return
+  end
 
   -- Calculate lap time
   local newLapStartTime = getTickCount()
@@ -343,18 +371,20 @@ function Race.onFinishLap()
   Race.lapStartTime[player] = newLapStartTime
 
   -- Calculate best lap time
-  if not Race.bestLapTime[player] then
-    Race.bestLapTime[player] = elapsedTime
-  elseif elapsedTime < Race.bestLapTime[player] then
-    Race.bestLapTime[player] = elapsedTime
+  if not Race.bestLapTime[playerAccount] or elapsedTime < Race.bestLapTime[playerAccount] then
+    Race.bestLapTime[playerAccount] = elapsedTime
+    Race.bestLapVehicleName[playerAccount] = Race.vehicles[player].name
+    -- Race.bestLapVehicleName[playerAccount] = exports.car_system:getVehicleModName(Race.vehicles[player].model)
   end
   -- Determine the best player
   if not Race.bestPlayer or elapsedTime < Race.bestPlayerTime then
-    Race.bestPlayer = player
+    Race.bestPlayerName = player.name
     Race.bestPlayerTime = elapsedTime
-    triggerClientEvent(Race.participants, "Race.onLapRecord", resourceRoot, Race.bestPlayer, Race.bestPlayerTime)
+    for i, participantAccount in pairs(Race.participants) do
+      triggerClientEvent(Race.participants, "Race.onLapRecord", resourceRoot, Race.bestPlayerName, Race.bestPlayerTime)
+    end
   end
-  triggerClientEvent(player, "Race.onFinishLap", resourceRoot, elapsedTime, Race.bestLapTime[player])
+  triggerClientEvent(player, "Race.onFinishLap", resourceRoot, elapsedTime, Race.bestLapTime[playerAccount])
 end
 
 addEventHandler("Race.onFinishLap", resourceRoot, Race.onFinishLap)
@@ -369,7 +399,7 @@ addEventHandler("onPlayerVehicleEnter", root, function (vehicle, seat)
 end)
 
 addEventHandler("onPlayerVehicleExit", root, function ()
-  if Race.isJoined(source) then
+  if Race.isInRace(source) then
     outputMessage("Вернитесь в машину, чтобы продолжить гонку.", source)
     Race.leftVehicleTimer[source] = Timer(function (player)
       outputMessage("Вы вышли из машины. Участие в гонке отменено.", player)
@@ -400,7 +430,7 @@ end)
 
 -- Remove a player from the race when he quits
 addEventHandler("onPlayerQuit", root, function ()
-  Race.leave(source)
+  Race.leave(source, true)
 end)
 
 -- Remove a player from the race when his vehicle is destroyed
@@ -413,5 +443,12 @@ addEventHandler("onElementDestroy", root, function ()
         break
       end
     end
+  end
+end)
+
+addEventHandler("onPlayerChangeNick", root, function (oldNick, newNick)
+  local playerAccount = source:getAccount()
+  if playerAccount and Race.participantNames[playerAccount] then
+    Race.participantNames[playerAccount] = newNick
   end
 end)
