@@ -12,5 +12,6 @@ addEventHandler("onResourceStart", resourceRoot, function ()
 end)
 
 function outputMessage(message, to)
-  outputChatBox("[Гонка] #FFFFFF" .. message, to, unpack(ACCENT_COLOR), true)
+  local r, g, b = unpack(ACCENT_COLOR)
+  outputChatBox("[Гонка] #FFFFFF" .. message, to, r, g, b, true)
 end
