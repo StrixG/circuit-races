@@ -83,7 +83,7 @@ end
 function Race.join(bestLapTime, bestPlayerName, bestPlayerTime)
   Race.joined = true
   Race.bestLapTime = bestLapTime
-  Race.bestPlayerName = bestLapTime
+  Race.bestPlayerName = bestPlayerName
   Race.bestPlayerTime = bestPlayerTime
 end
 
