@@ -187,7 +187,7 @@ function Race.givePrize(account, amount)
       tostring(player.money),
       tostring(amount)))
   else
-    -- exports.bank:giveAccountBankMoney(account, amount, "RUB")
+    exports.bank:giveAccountBankMoney(account, amount, "RUB")
 
     outputDebugString(string.format("[Circuit Race] Offline player (%s) won race and earned %s (added to bank)", account.name, tostring(amount)))
   end
@@ -389,8 +389,8 @@ function Race.onFinishLap()
   -- Calculate best lap time
   if not Race.bestLapTime[playerAccount] or elapsedTime < Race.bestLapTime[playerAccount] then
     Race.bestLapTime[playerAccount] = elapsedTime
-    Race.bestLapVehicleName[playerAccount] = Race.vehicles[player].name
-    -- Race.bestLapVehicleName[playerAccount] = exports.car_system:getVehicleModName(Race.vehicles[player].model)
+    -- Race.bestLapVehicleName[playerAccount] = Race.vehicles[player].name
+    Race.bestLapVehicleName[playerAccount] = exports.car_system:getVehicleModName(Race.vehicles[player].model)
   end
   -- Determine the best player
   if not Race.bestPlayerName or elapsedTime < Race.bestPlayerTime then
