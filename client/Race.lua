@@ -30,7 +30,6 @@ function Race.onConfirm(conirmed)
 end
 
 function Race.start(trackName, checkpoints, timeLeft)
-  print("START")
   Race.waiting = false
   Race.started = true
   Race.trackName = trackName
@@ -47,7 +46,6 @@ function Race.start(trackName, checkpoints, timeLeft)
 end
 
 function Race.stop()
-  print("STOP")
   Race.waiting = false
   Race.started = false
   Race.joined = false
