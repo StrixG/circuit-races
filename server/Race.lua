@@ -357,9 +357,7 @@ function Race.onStartMarkerHit(source, matchingDimension)
       end
 
       if Race.isJoined(source) then
-        if Race.waiting then
-          outputMessage("Вы уже участвуете в гонке. Ожидайте начала.", source)
-        elseif not Race.isInRace(source) then
+        if not Race.waiting and not Race.isInRace(source) then
           Race.join(source)
         end
       elseif not isDriver(source) then
